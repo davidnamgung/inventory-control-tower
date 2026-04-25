@@ -27,30 +27,32 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- DATA LOADING ---
 import os
-
+# --- DATA LOADING ---
 @st.cache_data
 def get_data():
-    # Use a relative path that works both locally and on the cloud
     db_path = 'data/processed/supply_chain.duckdb'
     
-    # Debugging Check: This will print a clear message in your Streamlit logs
     if not os.path.exists(db_path):
-        st.error(f"🚨 Database file not found at: {os.path.abspath(db_path)}")
-        return pd.DataFrame() # Return empty so the app doesn't crash completely
+        # This will show up in red on the web app to tell you it's a path issue
+        st.error(f"FATAL: Database not found at {db_path}. Check GitHub folder structure.")
+        return None # Return None instead of an empty DF
 
-    # Add read_only=True
     try:
         conn = duckdb.connect(db_path, read_only=True)
         df = conn.execute("SELECT * FROM master_parts_data").df()
         conn.close()
         return df
     except Exception as e:
-        st.error(f"❌ Error connecting to DuckDB: {e}")
-        return pd.DataFrame()
+        st.error(f"Error: {e}")
+        return None
 
 df = get_data()
+
+# --- CRITICAL CHECK ---
+if df is None:
+    st.warning("⚠️ The Dashboard cannot load because the source database is missing from the repository.")
+    st.stop() # Stops the app here so it doesn't try to load the rest and crash
 
 # --- SIDEBAR FILTERS ---
 st.sidebar.header("🕹️ Control Panel")
