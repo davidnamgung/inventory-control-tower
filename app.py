@@ -109,24 +109,24 @@ with tab_dash:
         """, unsafe_allow_html=True)
 
     st.subheader("Inventory Valuation Flow")
-# Calculate the 'Safe' value
-safe_val = total_val - risk_val
+    # Calculate the 'Safe' value
+    safe_val = total_val - risk_val
 
-fig_waterfall = go.Figure(go.Waterfall(
-    orientation = "v",
-    measure = ["absolute", "relative", "total"],
-    x = ["Total Potential Value", "Capital at Risk", "Verified Safe Value"],
-    y = [total_val, -risk_val, safe_val],
-    text = [format_currency(total_val), format_currency(-risk_val), format_currency(safe_val)],
-    textposition = "outside",
-    connector = {"line":{"color":"rgb(63, 63, 63)"}},
-    decreasing = {"marker":{"color":"#f43f5e"}},
-    increasing = {"marker":{"color":"#10b981"}},
-    totals = {"marker":{"color":"#38bdf8"}}
-))
-fig_waterfall.update_layout(margin=dict(t=30, b=0, l=0, r=0))
-st.plotly_chart(fig_waterfall, use_container_width=True)
-st.markdown('<p class="plot-explanation"><b>Insight:</b> A financial breakdown illustrating how unverified or anomalous data degrades the reliable valuation of the company’s inventory assets.</p>', unsafe_allow_html=True)
+    fig_waterfall = go.Figure(go.Waterfall(
+        orientation = "v",
+        measure = ["absolute", "relative", "total"],
+        x = ["Total Potential Value", "Capital at Risk", "Verified Safe Value"],
+        y = [total_val, -risk_val, safe_val],
+        text = [format_currency(total_val), format_currency(-risk_val), format_currency(safe_val)],
+        textposition = "outside",
+        connector = {"line":{"color":"rgb(63, 63, 63)"}},
+        decreasing = {"marker":{"color":"#f43f5e"}},
+        increasing = {"marker":{"color":"#10b981"}},
+        totals = {"marker":{"color":"#38bdf8"}}
+    ))
+    fig_waterfall.update_layout(margin=dict(t=30, b=0, l=0, r=0))
+    st.plotly_chart(fig_waterfall, use_container_width=True)
+    st.markdown('<p class="plot-explanation"><b>Insight:</b> A financial breakdown illustrating how unverified or anomalous data degrades the reliable valuation of the company’s inventory assets.</p>', unsafe_allow_html=True)
 
     # 3. VISUALIZATIONS
     c1, c2 = st.columns(2)
