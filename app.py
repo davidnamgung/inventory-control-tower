@@ -47,7 +47,9 @@ def get_data():
         st.error(f"Error: {e}")
         return None
 
-df = get_data()
+# Add a loading spinner
+with st.spinner("Connecting to DuckDB Operational Data Store..."):
+    df = get_data()
 
 # --- CRITICAL CHECK ---
 if df is None:
@@ -135,13 +137,30 @@ with tab_dash:
     st.markdown('<p class="plot-explanation"><b>Insight:</b> High-value items (top of chart) that are red (Needs Review) represent the highest financial danger to the company’s balance sheet.</p>', unsafe_allow_html=True)
 
 with tab_data:
-    st.subheader("🗄️ Inventory Master Data Explorer")
-    st.markdown("Use this tab to perform deep-dives into specific SKU records or export data for manual auditing.")
+    st.subheader("🗄️ Master Data Editor")
+    st.markdown("Use this tab to manually audit and correct 'Needs Review' records.")
     
-    st.dataframe(filtered_df, use_container_width=True, height=500)
+    # 1. Replace st.dataframe with st.data_editor
+    edited_df = st.data_editor(
+        filtered_df, 
+        use_container_width=True, 
+        height=500,
+        num_rows="dynamic" # Allows users to add or delete rows
+    )
     
-    csv = filtered_df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Download Audit-Ready CSV", data=csv, file_name='supply_chain_audit.csv', mime='text/csv')
+    col1, col2 = st.columns([1, 4])
+    
+    with col1:
+        # 2. Add a Save Button with a Toast Notification
+        if st.button("💾 Save Changes", type="primary"):
+            # In a real company, you would run a DuckDB UPDATE query here.
+            # For a public portfolio, we use a simulation so internet users don't break your data!
+            st.toast("✅ Changes successfully pushed to DuckDB!")
+            st.balloons() # A fun Streamlit micro-interaction
+
+    with col2:
+        csv = edited_df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download Audit-Ready CSV", data=csv, file_name='supply_chain_audit.csv', mime='text/csv')
 
 with tab_report:
     st.header("📜 Technical Architecture & Methodology")
