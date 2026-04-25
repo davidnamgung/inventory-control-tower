@@ -104,7 +104,8 @@ with tab_dash:
     with c2:
         st.subheader("Inventory Count by Family")
         count_data = filtered_df.groupby('model_family_group').size().reset_index(name='SKU Count')
-        fig_bar = px.bar(count_data, x='SKU Count', y='model_family_group', orientation='h',
+        fig_bar = px.bar(count_data, x='SKU Count', y='model_family_group', orientation='v',
+                         color_discrete_sequence=['#10b981'], text='SKU Count',
                          color='SKU Count', color_continuous_scale='Blues')
         st.plotly_chart(fig_bar, use_container_width=True)
         st.markdown('<p class="plot-explanation"><b>Insight:</b> Identifies the size of each inventory category by SKU volume. Useful for workload balancing among procurement officers.</p>', unsafe_allow_html=True)
