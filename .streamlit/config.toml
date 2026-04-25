@@ -1,0 +1,19 @@
+[theme]
+# The primary accent color for interactive elements (matching our Plotly charts)
+primaryColor = "#38bdf8"
+
+# The main background color (Deep Navy)
+backgroundColor = "#0f172a"
+
+# The background color for sidebars and input widgets
+secondaryBackgroundColor = "#1e293b"
+
+# Text color (Crisp White/Gray)
+textColor = "#f8fafc"
+
+# Font choice
+font = "sans serif"
+
+[client]
+# This hides the default Streamlit "Deploy" button and hamburger menu in the top right
+toolbarMode = "minimal"

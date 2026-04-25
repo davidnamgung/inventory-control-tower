@@ -108,6 +108,26 @@ with tab_dash:
         </div>
         """, unsafe_allow_html=True)
 
+    st.subheader("Inventory Valuation Flow")
+# Calculate the 'Safe' value
+safe_val = total_val - risk_val
+
+fig_waterfall = go.Figure(go.Waterfall(
+    orientation = "v",
+    measure = ["absolute", "relative", "total"],
+    x = ["Total Potential Value", "Capital at Risk", "Verified Safe Value"],
+    y = [total_val, -risk_val, safe_val],
+    text = [format_currency(total_val), format_currency(-risk_val), format_currency(safe_val)],
+    textposition = "outside",
+    connector = {"line":{"color":"rgb(63, 63, 63)"}},
+    decreasing = {"marker":{"color":"#f43f5e"}},
+    increasing = {"marker":{"color":"#10b981"}},
+    totals = {"marker":{"color":"#38bdf8"}}
+))
+fig_waterfall.update_layout(margin=dict(t=30, b=0, l=0, r=0))
+st.plotly_chart(fig_waterfall, use_container_width=True)
+st.markdown('<p class="plot-explanation"><b>Insight:</b> A financial breakdown illustrating how unverified or anomalous data degrades the reliable valuation of the company’s inventory assets.</p>', unsafe_allow_html=True)
+
     # 3. VISUALIZATIONS
     c1, c2 = st.columns(2)
 
@@ -135,6 +155,18 @@ with tab_dash:
                              labels={"stock_quantity": "Units in Stock", "base_price": "Unit Price ($)"})
     st.plotly_chart(fig_scatter, use_container_width=True)
     st.markdown('<p class="plot-explanation"><b>Insight:</b> High-value items (top of chart) that are red (Needs Review) represent the highest financial danger to the company’s balance sheet.</p>', unsafe_allow_html=True)
+
+
+
+    st.subheader("Category Failure Rates (100% Stacked)")
+    fig_stacked = px.histogram(filtered_df, y="model_family_group", color="data_health", 
+                           barnorm="percent", orientation="h",
+                           color_discrete_map={'Clean': '#10b981', 'Needs Review': '#f43f5e'},
+                           labels={'model_family_group': 'Part Family'})
+    fig_stacked.update_layout(xaxis_title="Percentage (%)", yaxis_title="")
+    st.plotly_chart(fig_stacked, use_container_width=True)
+    st.markdown('<p class="plot-explanation"><b>Insight:</b> Normalizes the volume to 100%. Categories with large red bars indicate a systemic data entry issue for that specific part family, regardless of total SKU count.</p>', unsafe_allow_html=True)
+
 
 with tab_data:
     st.subheader("🗄️ Master Data Editor")
