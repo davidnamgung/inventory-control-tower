@@ -2,46 +2,32 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
-# --- PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="Inventory Control Tower", 
-    page_icon="🏗️", 
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+def format_currency(value):
+    if value >= 1_000_000_000:
+        return f"${value / 1_000_000_000:.2f}B"
+    elif value >= 1_000_000:
+        return f"${value / 1_000_000:.2f}M"
+    elif value >= 1_000:
+        return f"${value / 1_000:.1f}K"
+    else:
+        return f"${value:.2f}"
 
-# Custom CSS for a cleaner, corporate aesthetic
-# Custom CSS for a professional Dark Mode aesthetic
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Inventory Control Tower v2", page_icon="🏢", layout="wide")
+
+# Custom Professional CSS
 st.markdown("""
     <style>
-    /* Targeting the metric cards */
-    [data-testid="stMetric"] {
-        background-color: #1e2130; 
-        border: 1px solid #313348;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Ensuring the labels and values are bright and readable */
-    [data-testid="stMetricLabel"] {
-        color: #94a3b8 !important; /* Muted blue-grey for labels */
-        font-weight: 600;
-    }
-    
-    [data-testid="stMetricValue"] {
-        color: #ffffff !important;
-        font-weight: 700;
-    }
+    [data-testid="stMetric"] { background-color: #111827; border: 1px solid #374151; padding: 20px; border-radius: 12px; }
+    [data-testid="stMetricValue"] { color: #38bdf8 !important; font-size: 1.8rem; }
+    .plot-explanation { font-style: italic; color: #94a3b8; font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px; }
+    .business-q { background-color: #1e293b; padding: 15px; border-radius: 8px; border-left: 5px solid #38bdf8; margin-bottom: 20px; }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🏗️ Inventory Control Tower")
-st.markdown("### Master Data Quality & Supply Chain Monitor")
-
-# --- DATA CONNECTION (WITH CACHING) ---
-# Using @st.cache_data ensures the database isn't queried from scratch every time you click a button
+# --- DATA LOADING ---
 @st.cache_data
 def get_data():
     db_path = 'data/processed/supply_chain.duckdb'
@@ -53,63 +39,194 @@ def get_data():
 df = get_data()
 
 # --- SIDEBAR FILTERS ---
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/2830/2830312.png", width=50) # Generic logistics icon
-st.sidebar.header("Filter Workspace")
+st.sidebar.header("🕹️ Control Panel")
+health_select = st.sidebar.multiselect("Data Quality Filter:", df['data_health'].unique(), default=df['data_health'].unique())
+family_select = st.sidebar.multiselect("inventory Category:", df['model_family_group'].unique(), default=df['model_family_group'].unique())
 
-health_filter = st.sidebar.multiselect(
-    "Data Health Status:",
-    options=df["data_health"].unique(),
-    default=df["data_health"].unique()
-)
+filtered_df = df[(df['data_health'].isin(health_select)) & (df['model_family_group'].isin(family_select))]
 
-family_filter = st.sidebar.multiselect(
-    "Part Family:",
-    options=df["model_family_group"].unique(),
-    default=df["model_family_group"].unique()
-)
+# --- CALCULATIONS ---
+total_val = (filtered_df['base_price'] * filtered_df['stock_quantity']).sum()
+risk_df = filtered_df[filtered_df['data_health'] == 'Needs Review']
+risk_val = (risk_df['base_price'] * risk_df['stock_quantity']).sum()
 
-# Apply Filters
-filtered_df = df[
-    (df["data_health"].isin(health_filter)) & 
-    (df["model_family_group"].isin(family_filter))
-]
+# --- NAVIGATION TABS ---
+tab_dash, tab_data, tab_report = st.tabs(["📊 Executive Dashboard", "🗄️ Master Data Explorer", "📜 Technical Report"])
 
-# --- KEY PERFORMANCE INDICATORS (KPIs) ---
-st.markdown("##### Pipeline Overview")
-col1, col2, col3, col4 = st.columns(4)
-
-total_records = len(filtered_df)
-flagged_records = len(filtered_df[filtered_df['data_health'] == 'Needs Review'])
-clean_rate = ((total_records - flagged_records) / total_records * 100) if total_records > 0 else 0
-
-col1.metric("Total Records", f"{total_records:,}")
-col2.metric("Flagged for Audit", f"{flagged_records:,}", delta="-Action Required", delta_color="inverse")
-col3.metric("Data Cleanliness", f"{clean_rate:.1f}%")
-col4.metric("Avg. Base Price", f"${filtered_df['base_price'].mean():.2f}")
-
-st.divider()
-
-# --- INTERACTIVE TABS ---
-tab1, tab2 = st.tabs(["📊 Visual Analytics", "🗄️ Raw Data Explorer"])
-
-with tab1:
-    st.subheader("Anomaly Distribution")
-    # Group data for the chart
-    chart_data = filtered_df.groupby(['model_family_group', 'data_health']).size().reset_index(name='count')
+with tab_dash:
+    st.markdown("### 🏢 Enterprise Inventory Oversight")
     
-    # Create an interactive Plotly bar chart
-    fig = px.bar(
-        chart_data, 
-        x='model_family_group', 
-        y='count', 
-        color='data_health',
-        title="Record Health by Part Family",
-        labels={'model_family_group': 'Part Family', 'count': 'Number of Records'},
-        color_discrete_map={'Clean': '#2ecc71', 'Needs Review': '#e74c3c'}
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    # KPI SECTION
+    k1, k2, k3, k4 = st.columns(4)
+    
+    # Calculate values
+    total_val = (filtered_df['base_price'] * filtered_df['stock_quantity']).sum()
+    risk_df = filtered_df[filtered_df['data_health'] == 'Needs Review']
+    risk_val = (risk_df['base_price'] * risk_df['stock_quantity']).sum()
+    
+    # Apply the smart formatter
+    k1.metric("Total Items (SKUs)", f"{len(filtered_df):,}")
+    k2.metric("Total Value on Hand", format_currency(total_val))
+    k3.metric("Capital at Risk", format_currency(risk_val), delta="Requires Audit", delta_color="inverse")
+    k4.metric("Health Score", f"{(len(filtered_df[filtered_df['data_health']=='Clean'])/len(filtered_df)*100):.1f}%")
 
-with tab2:
-    st.subheader("Inventory Master Data")
-    # Updated 'width' parameter for the latest Streamlit version
-    st.dataframe(filtered_df, width=None, height=400, use_container_width=True)
+    st.info(f"""
+    **📊 Management Context:** While the Audit Rate is only **{(len(risk_df)/len(filtered_df)*100):.1f}%**, 
+    it represents **{format_currency(risk_val)}** in potential valuation errors. 
+    This is due to **Financial Weighting**: extreme pricing anomalies (outliers) detected by our 
+    IQR logic carry significantly more financial risk than standard inventory. 
+    This dashboard prioritizes these 'High-Value' flags to maximize audit efficiency.
+    """)
+
+    st.divider()
+
+    # 2. BUSINESS QUESTIONS SECTION
+    with st.expander("❓ Key Business Questions Answered by this View", expanded=True):
+        st.markdown("""
+        <div class="business-q">
+        <b>1. Where is our data integrity weakest?</b> The Health Composition chart identifies which part families require urgent manual verification.<br>
+        <b>2. Are expensive mistakes hiding in the data?</b> The Anomaly Scatter Plot isolates high-value items with flagged data quality issues.<br>
+        <b>3. How much capital is 'frozen' due to unverified records?</b> The Financial Risk KPI quantifies the dollar impact of poor data quality.
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 3. VISUALIZATIONS
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.subheader("Data Quality Composition")
+        fig_donut = px.pie(filtered_df, names='data_health', hole=0.6, 
+                           color='data_health', color_discrete_map={'Clean': '#10b981', 'Needs Review': '#c41e3a'})
+        fig_donut.update_layout(showlegend=True, margin=dict(t=30, b=0, l=0, r=0))
+        st.plotly_chart(fig_donut, use_container_width=True)
+        st.markdown('<p class="plot-explanation"><b>Insight:</b> This represents the overall system trust score. A high "Needs Review" percentage indicates a breakdown in the upstream data entry process.</p>', unsafe_allow_html=True)
+
+    with c2:
+        st.subheader("Inventory Count by Family")
+        count_data = filtered_df.groupby('model_family_group').size().reset_index(name='SKU Count')
+        fig_bar = px.bar(count_data, x='SKU Count', y='model_family_group', orientation='h',
+                         color='SKU Count', color_continuous_scale='Blues')
+        st.plotly_chart(fig_bar, use_container_width=True)
+        st.markdown('<p class="plot-explanation"><b>Insight:</b> Identifies the size of each inventory category by SKU volume. Useful for workload balancing among procurement officers.</p>', unsafe_allow_html=True)
+
+    st.subheader("Financial Risk Analysis: Price vs. Quantity")
+    fig_scatter = px.scatter(filtered_df, x="stock_quantity", y="base_price", color="data_health",
+                             hover_data=['part_id', 'part_name'], size="base_price",
+                             color_discrete_map={'Clean': '#10b981', 'Needs Review': '#c41e3a'},
+                             labels={"stock_quantity": "Units in Stock", "base_price": "Unit Price ($)"})
+    st.plotly_chart(fig_scatter, use_container_width=True)
+    st.markdown('<p class="plot-explanation"><b>Insight:</b> High-value items (top of chart) that are red (Needs Review) represent the highest financial danger to the company’s balance sheet.</p>', unsafe_allow_html=True)
+
+with tab_data:
+    st.subheader("🗄️ Inventory Master Data Explorer")
+    st.markdown("Use this tab to perform deep-dives into specific SKU records or export data for manual auditing.")
+    
+    st.dataframe(filtered_df, use_container_width=True, height=500)
+    
+    csv = filtered_df.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Download Audit-Ready CSV", data=csv, file_name='supply_chain_audit.csv', mime='text/csv')
+
+with tab_report:
+    st.header("📜 Technical Architecture & Methodology")
+    
+    st.markdown(""" 
+**End-to-End Supply Chain Data Engineering & BI Platform**
+
+## 1. Executive Summary
+### Project Overview
+The **Inventory Control Tower** is a production-grade data engineering solution designed to automate the lifecycle of supply chain data. In high-volume logistics environments, data integrity is the primary bottleneck for accurate procurement and financial reporting. This project solves that by building a modular ETL pipeline that ingests messy, disparate data sources and transforms them into a "Single Source of Truth."
+
+### Goals
+* **Automation:** Replace manual Excel-based auditing with a code-first, automated orchestrator.
+* **Risk Quantification:** Identify and isolate anomalous pricing and missing data before it impacts the balance sheet.
+* **Operational Scalability:** Design an architecture capable of processing incremental daily batches (100k+ rows) with sub-second analytical performance.
+
+### Problem Statement
+Logistics data often suffers from "Data Decay":
+1.  **Human Entry Errors:** Pricing outliers (e.g., $5.00 vs $5,000) that skew valuation.
+2.  **Lexical Fragmentation:** Inconsistent naming conventions (e.g., "ENG" vs "Engine") breaking categorical analysis.
+3.  **Missing Critical Metadata:** Blank ELM (Engineering Logistics Management) codes that stall procurement workflows.
+
+---
+
+## 2. Data Dictionary
+The master inventory table consists of 105,000+ records with the following schema:
+
+| Column Name | Data Type | Description |
+| :--- | :--- | :--- |
+| `part_id` | String | Unique identifier for the SKU (e.g., PRT-001001). |
+| `part_name` | String | Descriptive name of the inventory component. |
+| `elm_code` | String | Engineering tracking code (Flagged as 'REQUIRES-AUDIT' if missing). |
+| `model_family_group` | Category | Normalized part category (Engine, Transmission, Electrical, etc.). |
+| `base_price` | Float | Unit cost in USD. |
+| `stock_quantity` | Integer | Units currently available in stock. |
+| `data_health` | String | Automated flag: `Clean` or `Needs Review`. |
+| `is_price_anomaly`| Boolean | Boolean flag identifying statistical outliers in pricing. |
+
+---
+
+## 3. Data Extraction (ETL Pipeline)
+The backend is powered by **Mage AI**, utilizing a modular DAG (Directed Acyclic Graph) architecture.
+
+### A. Extraction (The Collector Pattern)
+The pipeline implements a "Sweep & Archive" strategy:
+* **Ingestion:** Python's `glob` library scans the `/data/raw` directory for any new `.csv` batches.
+* **Archiving:** Once a batch is processed, it is physically moved to `/data/archive/`. This ensures the pipeline is **Idempotent** (running it twice won't duplicate data).
+
+### B. Cleaning & Transformation
+The Transformation block applies three layers of automated business logic:
+1.  **Lexical Normalization:** Uses regex mapping to standardize variants (e.g., `motor` → `Engine`).
+2.  **Imputation:** Fills NULL values in critical fields with searchable audit tags.
+3.  **Statistical Anomaly Detection:** Implements **Tukey’s Fences** using the Interquartile Range (IQR):
+    * *Threshold:* Any price exceeding $Q3 + (1.5 \times IQR)$ is flagged.
+
+### C. Loading (The Analytical Engine)
+Cleaned records are loaded into **DuckDB**, an in-process OLAP engine.
+* **Append Logic:** Uses `INSERT INTO` to grow the historical dataset rather than overwriting.
+* **Performance:** DuckDB handles the 100k+ row dataset with sub-second response times for the frontend.
+
+---
+
+## 4. The Streamlit Dashboard
+The frontend serves as a specialized "Control Tower" for supply chain executives.
+
+### Core Analytics Features:
+* **Executive Metrics:** Instant calculation of "Capital at Risk" (the total USD value of flagged items).
+* **Health Composition:** Interactive Donut Charts showing system-wide trust scores.
+* **Financial Risk Scatter Plot:** A visual Pareto analysis tool to isolate high-value/high-volume anomalies.
+* **Audit-Ready Table:** A dedicated tab for deep-diving into "Needs Review" records with a one-click CSV export for procurement officers.
+
+---
+
+## 5. Challenges & Lessons Learned
+
+### The Idempotency Crisis
+During development, an initial run loaded 100,000 records. Because the source file was not moved, a second run appended another 100,000, effectively doubling the company's inventory valuation on paper. 
+* **Solution:** I implemented a strict **Post-Write Archive** script that only moves files to the archive folder *after* DuckDB confirms a successful commit.
+
+### Dependency Management
+Developing on macOS with Python 3.12 required careful version-pinning between Mage AI and DuckDB to ensure the SQLite-based orchestration meta-database did not conflict with the analytical DuckDB file.
+
+---
+
+## 6. Future Improvements
+
+### A. API & Cloud Integration
+Transition from local CSV sweeps to an **Airbyte** or **REST API** connector to ingest live data from Google Sheets or an ERP system (like SAP).
+
+### B. Automated Alerting
+Integrating a **Twilio** or **Slack API** block into the Mage DAG to send an instant notification to the warehouse manager whenever a high-value anomaly (e.g., >$15,000) is detected.
+
+### C. Machine Learning for Imputation
+Moving from simple string imputation to using a **Random Forest** or **XGBoost** model to predict missing ELM codes based on the `part_name` and `model_family_group` patterns.
+
+---
+
+**Author:** David Namgung  
+**Role:** Data Engineer & McGill CS Student  
+**Tech Stack:** Mage AI, DuckDB, Streamlit, Python (Pandas/Plotly)
+    """)
+    
+        
+    
+    st.info(f"Current Pipeline Metrics: {len(df):,} total rows processed and secured in DuckDB.")
