@@ -295,7 +295,8 @@ Moving from simple string imputation to using a **Random Forest** or **XGBoost**
 
 ### D. Scheduled Orchestration (Cron Jobs)
                 
-Currently, the pipeline is triggered manually for batch processing. The next architectural upgrade is to utilize Mage AI's native **Triggers** feature to schedule a daily cron job (e.g., `0 2 * * *` for 2:00 AM). This would allow the system to automatically sweep a cloud storage bucket (like AWS S3 or Google Cloud Storage) for new vendor files while the logistics team is offline, ensuring the dashboard is fully updated before the morning shift begins.
+    Currently, the pipeline is triggered manually for batch processing. The next architectural upgrade is to utilize Mage AI's native **Triggers** feature to schedule a daily cron job (e.g., `0 2 * * *` for 2:00 AM). This would allow the system to automatically sweep a cloud storage bucket (like AWS S3 or Google Cloud Storage) for new vendor files while the logistics team is offline, ensuring the dashboard is fully updated before the morning shift begins.
+
 ---
 
 **Author:** David Namgung  
