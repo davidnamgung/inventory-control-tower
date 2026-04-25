@@ -1,5 +1,5 @@
 # 🏗️ Inventory Control Tower: End-to-End Supply Chain Data Pipeline
-An automated, production-grade ETL (Extract, Transform, Load) pipeline designed to simulate and manage high-volume inventory data for supply chain logistics. This project demonstrates a full-stack data engineering architecture—moving from raw, messy data to an interactive Business Intelligence (BI) dashboard.
+An automated, production-grade ETL (Extract, Transform, Load) pipeline designed to simulate and manage high-volume inventory data for supply chain logistics. This project demonstrates a full-stack data engineering architecture, moving from raw, messy data to an interactive Business Intelligence (BI) dashboard and future analysis. 
 
 ## 📊 Project Overview
 In large-scale logistics (e.g., aviation parts, coffee distribution), data is rarely clean. This project simulates an enterprise environment where data enters the system from multiple sources with human-entry errors, pricing anomalies, and missing codes.
