@@ -1,6 +1,4 @@
-pandas
-faker
-mage-ai
-duckdb
 streamlit
+duckdb
+pandas
 plotly
