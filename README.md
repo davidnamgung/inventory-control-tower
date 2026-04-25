@@ -65,7 +65,8 @@ streamlit run app.py
 Access the dashboard at http://localhost:8501
 
 ### 📁 Project Structure
-Plaintext
+
+```plaintext
 ├── mage_pipeline/          # Mage AI project folder
 ├── data/
 │   ├── raw/                # New batches land here
@@ -74,6 +75,7 @@ Plaintext
 ├── scripts/                # Data generation and audit scripts
 ├── app.py                  # Streamlit application
 └── requirements.txt        # Project dependencies
+```
 
 ### 👨‍💻 Author
 David Namgung Undergraduate in Computer Science & Statistics | McGill University High-Performance Student-Athlete & Data Enthusiast
