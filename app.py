@@ -69,7 +69,12 @@ risk_df = filtered_df[filtered_df['data_health'] == 'Needs Review']
 risk_val = (risk_df['base_price'] * risk_df['stock_quantity']).sum()
 
 # --- NAVIGATION TABS ---
-tab_dash, tab_data, tab_report = st.tabs(["📊 Executive Dashboard", "🗄️ Master Data Explorer", "📜 Technical Report"])
+tab_dash, tab_data, tab_report, tab_guide = st.tabs([
+    "📊 Executive Dashboard", 
+    "🗄️ Master Data Editor", 
+    "📜 Technical Report", 
+    "⚙️ Operations Guide"
+])
 
 with tab_dash:
     st.markdown("### 🏢 Enterprise Inventory Oversight")
@@ -288,6 +293,8 @@ Integrating a **Twilio** or **Slack API** block into the Mage DAG to send an ins
 ### C. Machine Learning for Imputation
 Moving from simple string imputation to using a **Random Forest** or **XGBoost** model to predict missing ELM codes based on the `part_name` and `model_family_group` patterns.
 
+### D. Scheduled Orchestration (Cron Jobs)
+Currently, the pipeline is triggered manually for batch processing. The next architectural upgrade is to utilize Mage AI's native **Triggers** feature to schedule a daily cron job (e.g., `0 2 * * *` for 2:00 AM). This would allow the system to automatically sweep a cloud storage bucket (like AWS S3 or Google Cloud Storage) for new vendor files while the logistics team is offline, ensuring the dashboard is fully updated before the morning shift begins.
 ---
 
 **Author:** David Namgung  
@@ -298,3 +305,44 @@ Moving from simple string imputation to using a **Random Forest** or **XGBoost**
         
     
     st.info(f"Current Pipeline Metrics: {len(df):,} total rows processed and secured in DuckDB.")
+
+
+with tab_guide:
+    st.header("⚙️ Standard Operating Procedure (SOP)")
+    st.markdown("### How to Ingest New Data Batches")
+    st.info("Because this architecture utilizes a local DuckDB instance and GitHub for cloud deployment, follow these exact steps to update the live dashboard with new data.")
+
+    st.markdown("""
+    #### **Step 1: Stage the Raw Data**
+    1. Drop your new inventory batch (`.csv` format) into the local directory: 
+       `inventory-control-tower/data/raw/`
+    
+    #### **Step 2: Run the ETL Pipeline**
+    1. Open your terminal and activate your virtual environment:
+       ```bash
+       source venv/bin/activate
+       ```
+    2. Start the Mage AI orchestrator:
+       ```bash
+       mage start mage_pipeline
+       ```
+    3. Open `http://localhost:6789` in your browser.
+    4. Go to **Pipelines** -> click your pipeline -> click **Run@Once**.
+    5. *Note: Mage will automatically clean the data, append it to `supply_chain.duckdb`, and move your original `.csv` files into the `/data/archive/` folder.*
+
+    #### **Step 3: Verify Locally**
+    1. Open a new terminal tab (keep Mage running).
+    2. Launch the Streamlit dashboard locally to ensure the numbers updated:
+       ```bash
+       streamlit run app.py
+       ```
+
+    #### **Step 4: Push to the Cloud**
+    1. To update the public dashboard, you must send the new database file to GitHub. Run these commands:
+       ```bash
+       git add data/processed/supply_chain.duckdb
+       git commit -m "Automated data ingestion update"
+       git push origin main
+       ```
+    2. Streamlit Community Cloud will automatically detect the new database file and refresh the live dashboard within 60 seconds.
+    """)
