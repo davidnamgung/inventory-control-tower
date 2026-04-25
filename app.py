@@ -28,13 +28,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- DATA LOADING ---
+import os
+
 @st.cache_data
 def get_data():
+    # Use a relative path that works both locally and on the cloud
     db_path = 'data/processed/supply_chain.duckdb'
-    conn = duckdb.connect(db_path)
-    df = conn.execute("SELECT * FROM master_parts_data").df()
-    conn.close()
-    return df
+    
+    # Debugging Check: This will print a clear message in your Streamlit logs
+    if not os.path.exists(db_path):
+        st.error(f"🚨 Database file not found at: {os.path.abspath(db_path)}")
+        return pd.DataFrame() # Return empty so the app doesn't crash completely
+
+    # Add read_only=True
+    try:
+        conn = duckdb.connect(db_path, read_only=True)
+        df = conn.execute("SELECT * FROM master_parts_data").df()
+        conn.close()
+        return df
+    except Exception as e:
+        st.error(f"❌ Error connecting to DuckDB: {e}")
+        return pd.DataFrame()
 
 df = get_data()
 
