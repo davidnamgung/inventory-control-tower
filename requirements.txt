@@ -1,0 +1,6 @@
+pandas
+faker
+mage-ai
+duckdb
+streamlit
+plotly
